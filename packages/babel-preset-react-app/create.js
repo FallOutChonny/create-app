@@ -118,6 +118,12 @@ module.exports = function(api, opts, env) {
           removeImport: true,
         },
       ],
+      // Speed up reconciliation and reduce garbage collection pressure
+      isEnvProduction &&
+        require('@babel/plugin-transform-react-constant-elements').default,
+      // Improves runtime performance
+      isEnvProduction &&
+        require('@babel/plugin-transform-react-inline-elements').default,
       // function* () { yield 42; yield 43; }
       !isEnvTest && [
         require('@babel/plugin-transform-regenerator').default,
