@@ -5,6 +5,7 @@
   ],
   "scripts": {
     "build": "cd packages/react-scripts && node bin/react-scripts.js build",
+    "build:dll": "cd packages/react-scripts && GENERATE_DLLS=true node bin/react-scripts.js buildDLL",
     "changelog": "lerna-changelog",
     "create-react-app": "node tasks/cra.js",
     "e2e": "tasks/e2e-simple.sh",
@@ -39,5 +40,8 @@
     "yarn.lock": [
       "git rm --cached"
     ]
+  },
+  "dependencies": {
+    "react-hot-loader": "^4.3.4"
   }
 }
