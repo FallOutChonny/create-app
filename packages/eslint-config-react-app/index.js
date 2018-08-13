@@ -38,6 +38,12 @@ module.exports = {
     node: true,
   },
 
+  globals: {
+    __CLIENT__: true,
+    __SERVER__: true,
+    __DLLS__: true,
+  },
+
   parserOptions: {
     ecmaVersion: 6,
     sourceType: 'module',
