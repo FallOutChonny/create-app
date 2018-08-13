@@ -113,7 +113,7 @@ function printInstructions(appName, urls, useYarn) {
   console.log();
 }
 
-function createCompiler(webpack, config, appName, urls, useYarn) {
+function compile(webpack, config) {
   // "Compiler" is a low-level interface to Webpack.
   // It lets us listen to some events and provide our own custom messages.
   let compiler;
@@ -126,12 +126,26 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
     console.log();
     process.exit(1);
   }
+  return compiler;
+}
+
+function createCompiler(webpack, config, appName, urls, useYarn) {
+  const [clientConfig, serverConfig] = config;
+
+  const clientCompiler = compile(webpack, clientConfig);
+  const serverCompiler = compile(webpack, serverConfig);
 
   // "invalid" event fires when you have changed a file, and Webpack is
   // recompiling a bundle. WebpackDevServer takes care to pause serving the
   // bundle, so if you refresh, it'll wait instead of serving the old one.
   // "invalid" is short for "bundle invalidated", it doesn't imply any errors.
-  compiler.hooks.invalid.tap('invalid', () => {
+  clientCompiler.hooks.invalid.tap('invalid', () => {
+    if (isInteractive) {
+      clearConsole();
+    }
+    console.log('Compiling...');
+  });
+  serverCompiler.hooks.invalid.tap('invalid', () => {
     if (isInteractive) {
       clearConsole();
     }
@@ -142,7 +156,7 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
 
   // "done" event fires when Webpack has finished recompiling the bundle.
   // Whether or not you have warnings or errors, you will get this event.
-  compiler.hooks.done.tap('done', stats => {
+  clientCompiler.hooks.done.tap('done', stats => {
     if (isInteractive) {
       clearConsole();
     }
@@ -155,10 +169,9 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
     if (isSuccessful) {
       console.log(chalk.green('Compiled successfully!'));
     }
-    if (isSuccessful && (isInteractive || isFirstCompile)) {
+    if (isSuccessful && !isFirstCompile) {
       printInstructions(appName, urls, useYarn);
     }
-    isFirstCompile = false;
 
     // If errors exist, only show errors.
     if (messages.errors.length) {
@@ -190,7 +203,50 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
       );
     }
   });
-  return compiler;
+  serverCompiler.hooks.done.tap('done', stats => {
+    if (isInteractive) {
+      clearConsole();
+    }
+
+    const messages = formatWebpackMessages(stats.toJson({}, true));
+    const isSuccessful = !messages.errors.length && !messages.warnings.length;
+    if (isSuccessful) {
+      console.log(chalk.green('Compiled successfully!'));
+    }
+    if (isSuccessful && (isInteractive || isFirstCompile)) {
+      printInstructions(appName, urls, useYarn);
+    }
+    isFirstCompile = false;
+
+    if (messages.errors.length) {
+      // Only keep the first error. Others are often indicative
+      // of the same problem, but confuse the reader with noise.
+      if (messages.errors.length > 1) {
+        messages.errors.length = 1;
+      }
+      console.log(chalk.red('Failed to compile.\n'));
+      console.log(messages.errors.join('\n\n'));
+      return;
+    }
+
+    if (messages.warnings.length) {
+      console.log(chalk.yellow('Compiled with warnings.\n'));
+      console.log(messages.warnings.join('\n\n'));
+
+      // Teach some ESLint tricks.
+      console.log(
+        '\nSearch for the ' +
+          chalk.underline(chalk.yellow('keywords')) +
+          ' to learn more about each warning.'
+      );
+      console.log(
+        'To ignore, add ' +
+          chalk.cyan('// eslint-disable-next-line') +
+          ' to the line before.\n'
+      );
+    }
+  });
+  return { clientCompiler, serverCompiler };
 }
 
 function resolveLoopback(proxy) {

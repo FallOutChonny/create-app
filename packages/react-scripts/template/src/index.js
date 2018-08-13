@@ -1,12 +1,26 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
-import * as serviceWorker from './serviceWorker';
+import app from './server';
+import http from 'http';
 
-ReactDOM.render(<App />, document.getElementById('root'));
+process.on('unhandledRejection', err => {
+  throw err;
+});
 
-// If you want your app to work offline and load faster, you can change
-// unregister() to register() below. Note this comes with some pitfalls.
-// Learn more about service workers: http://bit.ly/CRA-PWA
-serviceWorker.unregister();
+const server = http.Server(app);
+
+let currentApp = app;
+
+server.listen(process.env.PORT || 3000, error => {
+  if (error) {
+    console.error(error);
+  }
+  console.log('server running');
+});
+
+if (module.hot) {
+  module.hot.accept('./server', () => {
+    console.log('🔁  HMR Reloading `./server`...');
+    server.removeListener('request', currentApp);
+    server.on('request', app);
+    currentApp = app;
+  });
+}

@@ -96,6 +96,7 @@ module.exports = function(
     build: 'react-scripts build',
     test: 'react-scripts test --env=jsdom',
     eject: 'react-scripts eject',
+    // TODO: 可能要加 build:dll
   };
 
   appPackage.browserslist = defaultBrowsers;
@@ -250,6 +251,7 @@ function isReactInstalled(appPackage) {
 
   return (
     typeof dependencies.react !== 'undefined' &&
-    typeof dependencies['react-dom'] !== 'undefined'
+    typeof dependencies['react-dom'] !== 'undefined' &&
+    typeof dependencies['react-hot-loader'] !== 'undefined'
   );
 }

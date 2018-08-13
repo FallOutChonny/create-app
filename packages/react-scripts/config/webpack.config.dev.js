@@ -12,6 +12,7 @@ const autoprefixer = require('autoprefixer');
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const AssetsPlugin = require('assets-webpack-plugin');
 const CaseSensitivePathsPlugin = require('case-sensitive-paths-webpack-plugin');
 const InterpolateHtmlPlugin = require('react-dev-utils/InterpolateHtmlPlugin');
 const WatchMissingNodeModulesPlugin = require('react-dev-utils/WatchMissingNodeModulesPlugin');
@@ -22,13 +23,16 @@ const getClientEnvironment = require('./env');
 const paths = require('./paths');
 const ManifestPlugin = require('webpack-manifest-plugin');
 
+const host = process.env.HOST || 'localhost';
+const port = process.env.PORT || 3001;
+
 // Webpack uses `publicPath` to determine where the app is being served from.
 // In development, we always serve from the root. This makes config easier.
-const publicPath = '/';
+const publicPath = `http://${host}:${port}/`;
 // `publicUrl` is just like `publicPath`, but we will provide it to our app
 // as %PUBLIC_URL% in `index.html` and `process.env.PUBLIC_URL` in JavaScript.
 // Omit trailing slash as %PUBLIC_PATH%/xyz looks better than %PUBLIC_PATH%xyz.
-const publicUrl = '';
+const publicUrl = `http://${host}:${port}`;
 // Get environment variables to inject into our app.
 const env = getClientEnvironment(publicUrl);
 
@@ -75,6 +79,9 @@ const getStyleLoaders = (cssOptions, preProcessor) => {
 // The production configuration is different and lives in a separate file.
 module.exports = {
   mode: 'development',
+  target: 'web',
+  context: process.cwd(),
+  cache: true,
   // You may want 'eval' instead if you prefer to see the compiled output in DevTools.
   // See the discussion in https://github.com/facebook/create-react-app/issues/343
   devtool: 'cheap-module-source-map',
@@ -84,19 +91,21 @@ module.exports = {
   entry: [
     // We ship a few polyfills by default:
     require.resolve('./polyfills'),
+    // RHL can keep React components state with Hot-reloading.
+    'react-hot-loader/patch',
     // Include an alternative client for WebpackDevServer. A client's job is to
-    // connect to WebpackDevServer by a socket and get notified about changes.
+    // connect to WebpackDevServer by a socket and get notifiepd about changes.
     // When you save a file, the client will either apply hot updates (in case
     // of CSS changes), or refresh the page (in case of JS changes). When you
     // make a syntax error, this client will display a syntax error overlay.
     // Note: instead of the default WebpackDevServer client, we use a custom one
     // to bring better experience for Create React App users. You can replace
     // the line below with these two lines if you prefer the stock client:
-    // require.resolve('webpack-dev-server/client') + '?/',
-    // require.resolve('webpack/hot/dev-server'),
-    require.resolve('react-dev-utils/webpackHotDevClient'),
+    require.resolve('webpack-dev-server/client') + `?${publicPath}`,
+    require.resolve('webpack/hot/only-dev-server'),
+    // require.resolve('react-dev-utils/webpackHotDevClient'),
     // Finally, this is your app's code:
-    paths.appIndexJs,
+    paths.appClientIndexJs,
     // We include the app code last so that if there is a runtime error during
     // initialization, it doesn't blow up the WebpackDevServer client, and
     // changing JS code would still trigger a refresh.
@@ -126,7 +135,9 @@ module.exports = {
     },
     // Keep the runtime chunk seperated to enable long term caching
     // https://twitter.com/wSokra/status/969679223278505985
-    runtimeChunk: true,
+    runtimeChunk: {
+      name: 'runtime',
+    },
   },
   resolve: {
     // This allows you to set a fallback for where Webpack should look for modules.
@@ -225,7 +236,7 @@ module.exports = {
               {
                 loader: require.resolve('thread-loader'),
                 options: {
-                  poolTimeout: Infinity // keep workers alive for more effective watch mode
+                  poolTimeout: Infinity, // keep workers alive for more effective watch mode
                 },
               },
               {
@@ -236,6 +247,7 @@ module.exports = {
                   // @remove-on-eject-end
                   presets: [require.resolve('babel-preset-react-app')],
                   plugins: [
+                    [require.resolve('react-hot-loader/babel')],
                     [
                       require.resolve('babel-plugin-named-asset-import'),
                       {
@@ -266,7 +278,7 @@ module.exports = {
               {
                 loader: require.resolve('thread-loader'),
                 options: {
-                  poolTimeout: Infinity // keep workers alive for more effective watch mode
+                  poolTimeout: Infinity, // keep workers alive for more effective watch mode
                 },
               },
               {
@@ -369,7 +381,12 @@ module.exports = {
     new InterpolateHtmlPlugin(env.raw),
     // Makes some environment variables available to the JS code, for example:
     // if (process.env.NODE_ENV === 'development') { ... }. See `./env.js`.
-    new webpack.DefinePlugin(env.stringified),
+    new webpack.DefinePlugin(
+      Object.assign({}, env.stringified, {
+        __CLIENT__: true,
+        __SERVER__: false,
+      })
+    ),
     // This is necessary to emit hot updates (currently CSS only):
     new webpack.HotModuleReplacementPlugin(),
     // Watcher doesn't work well if you mistype casing in a path so we use
@@ -393,6 +410,11 @@ module.exports = {
     new ManifestPlugin({
       fileName: 'asset-manifest.json',
       publicPath: publicPath,
+    }),
+    // Emits a json file with assets paths
+    new AssetsPlugin({
+      path: paths.appBuild,
+      filename: 'assets.json',
     }),
   ],
 
