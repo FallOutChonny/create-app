@@ -50,8 +50,10 @@ function getServedPath(appPackageJson) {
 // config after eject: we're in ./config/
 module.exports = {
   dotenv: resolveApp('.env'),
+  appRoot: resolveApp('/'),
   appPath: resolveApp('.'),
   appBuild: resolveApp('build'),
+  appCache: resolveApp('build/.cache-loader'),
   appDLL: resolveApp('build/dll'),
   appPublic: resolveApp('public'),
   appHtml: resolveApp('public/index.html'),
@@ -75,8 +77,10 @@ const resolveOwn = relativePath => path.resolve(__dirname, '..', relativePath);
 // config before eject: we're in ./node_modules/react-scripts/config/
 module.exports = {
   dotenv: resolveApp('.env'),
+  appRoot: resolveApp('/'),
   appPath: resolveApp('.'),
   appBuild: resolveApp('build'),
+  appCache: resolveApp('build/.cache-loader'),
   appPublic: resolveApp('public'),
   appDLL: resolveApp('build/dll'),
   appHtml: resolveApp('public/index.html'),
@@ -105,7 +109,9 @@ if (useTemplate) {
   module.exports = {
     dotenv: resolveOwn('template/.env'),
     appPath: resolveApp('.'),
+    appRoot: resolveApp('../../'),
     appBuild: resolveOwn('../../build'),
+    appCache: resolveApp('../../build/.cache-loader'),
     appDLL: resolveApp('../../build/dll'),
     appPublic: resolveOwn('template/public'),
     appHtml: resolveOwn('template/public/index.html'),
