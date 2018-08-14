@@ -1,4 +1,4 @@
-# Create React App [![Build Status](https://travis-ci.org/FallOutChonny/create-app.svg?branch=master)
+# Create React App [!Build Status](https://travis-ci.org/FallOutChonny/create-app.svg?branch=master)
 
 Create React apps with no build configuration.
 
