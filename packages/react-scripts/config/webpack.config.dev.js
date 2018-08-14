@@ -45,6 +45,12 @@ const sassModuleRegex = /\.module\.(scss|sass)$/;
 // common function to get style loaders
 const getStyleLoaders = (cssOptions, preProcessor) => {
   const loaders = [
+    {
+      loader: require.resolve('cache-loader'),
+      options: {
+        cacheDirectory: paths.appCache,
+      },
+    },
     require.resolve('style-loader'),
     {
       loader: require.resolve('css-loader'),
@@ -273,6 +279,12 @@ module.exports = {
           {
             test: /\.js$/,
             use: [
+              {
+                loader: require.resolve('cache-loader'),
+                options: {
+                  cacheDirectory: paths.appCache,
+                },
+              },
               // This loader parallelizes code compilation, it is optional but
               // improves compile time on larger projects
               {
@@ -369,6 +381,11 @@ module.exports = {
     ],
   },
   plugins: [
+    // Emits a json file with assets paths
+    new AssetsPlugin({
+      path: paths.appBuild,
+      filename: 'assets.json',
+    }),
     // Generates an `index.html` file with the <script> injected.
     new HtmlWebpackPlugin({
       inject: true,
@@ -410,11 +427,6 @@ module.exports = {
     new ManifestPlugin({
       fileName: 'asset-manifest.json',
       publicPath: publicPath,
-    }),
-    // Emits a json file with assets paths
-    new AssetsPlugin({
-      path: paths.appBuild,
-      filename: 'assets.json',
     }),
   ],
 

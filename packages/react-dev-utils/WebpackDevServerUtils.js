@@ -129,24 +129,41 @@ function compile(webpack, config) {
   return compiler;
 }
 
-function createCompiler(webpack, config, appName, urls, useYarn) {
-  const [clientConfig, serverConfig] = config;
+function createCompilerPromise(compiler) {
+  // Create a compilation Promise that can
+  // wait until webpack bundles are ready.
+  return new Promise((resolve, reject) => {
+    compiler.hooks.done.tap('done', stats => {
+      const messages = formatWebpackMessages(stats.toJson({}, true));
+      if (messages.errors.length) {
+        reject(new Error(messages.errors.join('\n\n')));
+        console.log(chalk.red('Failed to compile.\n'));
+      }
 
-  const clientCompiler = compile(webpack, clientConfig);
-  const serverCompiler = compile(webpack, serverConfig);
+      resolve({
+        stats,
+        warnings: messages.warnings,
+      });
+    });
+  });
+}
 
+function createClientCompiler(webpack, config) {
+  console.log('Compiling client...');
+  // Create a client-side webpack compiler.
+  return compile(webpack, config);
+}
+
+function createServerCompiler(webpack, config, appName, urls, useYarn) {
+  console.log('Compiling server...');
+  // Create a server-side webpack compiler.
+  const compiler = compile(webpack, config);
   // "invalid" event fires when you have changed a file, and Webpack is
   // recompiling a bundle. WebpackDevServer takes care to pause serving the
   // bundle, so if you refresh, it'll wait instead of serving the old one.
   // "invalid" is short for "bundle invalidated", it doesn't imply any errors.
-  clientCompiler.hooks.invalid.tap('invalid', () => {
-    if (isInteractive) {
-      clearConsole();
-    }
-    console.log('Compiling...');
-  });
-  serverCompiler.hooks.invalid.tap('invalid', () => {
-    if (isInteractive) {
+  compiler.hooks.invalid.tap('invalid', () => {
+    if (isInteractive && !isFirstCompile) {
       clearConsole();
     }
     console.log('Compiling...');
@@ -154,57 +171,8 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
 
   let isFirstCompile = true;
 
-  // "done" event fires when Webpack has finished recompiling the bundle.
-  // Whether or not you have warnings or errors, you will get this event.
-  clientCompiler.hooks.done.tap('done', stats => {
-    if (isInteractive) {
-      clearConsole();
-    }
-
-    // We have switched off the default Webpack output in WebpackDevServer
-    // options so we are going to "massage" the warnings and errors and present
-    // them in a readable focused way.
-    const messages = formatWebpackMessages(stats.toJson({}, true));
-    const isSuccessful = !messages.errors.length && !messages.warnings.length;
-    if (isSuccessful) {
-      console.log(chalk.green('Compiled successfully!'));
-    }
-    if (isSuccessful && !isFirstCompile) {
-      printInstructions(appName, urls, useYarn);
-    }
-
-    // If errors exist, only show errors.
-    if (messages.errors.length) {
-      // Only keep the first error. Others are often indicative
-      // of the same problem, but confuse the reader with noise.
-      if (messages.errors.length > 1) {
-        messages.errors.length = 1;
-      }
-      console.log(chalk.red('Failed to compile.\n'));
-      console.log(messages.errors.join('\n\n'));
-      return;
-    }
-
-    // Show warnings if no errors were found.
-    if (messages.warnings.length) {
-      console.log(chalk.yellow('Compiled with warnings.\n'));
-      console.log(messages.warnings.join('\n\n'));
-
-      // Teach some ESLint tricks.
-      console.log(
-        '\nSearch for the ' +
-          chalk.underline(chalk.yellow('keywords')) +
-          ' to learn more about each warning.'
-      );
-      console.log(
-        'To ignore, add ' +
-          chalk.cyan('// eslint-disable-next-line') +
-          ' to the line before.\n'
-      );
-    }
-  });
-  serverCompiler.hooks.done.tap('done', stats => {
-    if (isInteractive) {
+  compiler.hooks.done.tap('done', stats => {
+    if (isInteractive && !isFirstCompile) {
       clearConsole();
     }
 
@@ -246,7 +214,7 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
       );
     }
   });
-  return { clientCompiler, serverCompiler };
+  return compiler;
 }
 
 function resolveLoopback(proxy) {
@@ -489,7 +457,9 @@ function choosePort(host, defaultPort) {
 
 module.exports = {
   choosePort,
-  createCompiler,
+  createClientCompiler,
+  createServerCompiler,
+  createCompilerPromise,
   prepareProxy,
   prepareUrls,
 };

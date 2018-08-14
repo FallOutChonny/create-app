@@ -33,22 +33,20 @@ const fs = require('fs');
 const chalk = require('chalk');
 const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
-const clearConsole = require('react-dev-utils/clearConsole');
 const checkRequiredFiles = require('react-dev-utils/checkRequiredFiles');
 const {
   choosePort,
-  createCompiler,
+  createClientCompiler,
+  createServerCompiler,
+  createCompilerPromise,
   prepareProxy,
   prepareUrls,
 } = require('react-dev-utils/WebpackDevServerUtils');
-// const openBrowser = require('react-dev-utils/openBrowser');
 const paths = require('../config/paths');
 const clientConfig = require('../config/webpack.config.dev');
 const serverConfig = require('../config/webpack.config.server')('dev');
 const createDevServerConfig = require('../config/webpackDevServer.config');
 const buildDLL = require('./buildDLL');
-
-const isInteractive = process.stdout.isTTY;
 
 const buildDLLIfNeed = !fs.existsSync(paths.vendorManifest);
 
@@ -110,26 +108,7 @@ checkBrowsers(paths.appPath)
       }),
     ]);
 
-    // Create a webpack compiler that is configured with custom messages.
-    const { clientCompiler, serverCompiler } = createCompiler(
-      webpack,
-      [clientConfig, serverConfig],
-      appName,
-      urls,
-      paths.useYarn
-    );
-
-    clientCompiler.hooks.done.tap('done', () => {
-      serverCompiler.watch(
-        {
-          quiet: true,
-          stats: 'none',
-        },
-        /* eslint-disable no-unused-vars */
-        stats => {}
-      );
-      // openBrowser(urls.localUrlForBrowser);
-    });
+    const clientCompiler = createClientCompiler(webpack, clientConfig);
 
     // Load proxy config
     const proxySetting = require(paths.appPackageJson).proxy;
@@ -148,10 +127,26 @@ checkBrowsers(paths.appPath)
       if (err) {
         return console.log(err);
       }
-      if (isInteractive) {
-        clearConsole();
-      }
-      console.log(chalk.cyan('Starting the development server...\n'));
+    });
+
+    createCompilerPromise(clientCompiler).then(() => {
+      // Create a webpack compiler that is configured with custom messages.
+      const serverCompiler = createServerCompiler(
+        webpack,
+        serverConfig,
+        appName,
+        urls,
+        paths.useYarn
+      );
+
+      serverCompiler.watch(
+        {
+          quiet: true,
+          stats: 'none',
+        },
+        /* eslint-disable no-unused-vars */
+        stats => {}
+      );
     });
 
     ['SIGINT', 'SIGTERM'].forEach(function(sig) {
@@ -161,6 +156,7 @@ checkBrowsers(paths.appPath)
       });
     });
   })
+  .then(() => {})
   .catch(err => {
     if (err && err.message) {
       console.log(err.message);

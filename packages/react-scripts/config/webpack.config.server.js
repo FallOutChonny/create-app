@@ -25,8 +25,15 @@ module.exports = env => {
   };
 
   config.externals = [
+    'express',
     nodeExternals({
-      whitelist: [isDev ? 'webpack/hot/poll?1000' : null].filter(Boolean),
+      whitelist: [
+        isDev ? 'webpack/hot/poll?1000' : null,
+        /\.(eot|woff|woff2|ttf|otf)$/,
+        /\.(svg|png|jpg|jpeg|gif|ico)$/,
+        /\.(mp4|mp3|ogg|swf|webp)$/,
+        /\.(css|scss|sass|sss|less)$/,
+      ].filter(x => x),
     }),
   ];
 
@@ -44,9 +51,11 @@ module.exports = env => {
       if (x.oneOf) {
         return Object.assign({}, x, {
           oneOf: x.oneOf.map(y => {
-            if (y.use && y.use[0] === require.resolve('style-loader')) {
+            if (y.use && y.use[1] === require.resolve('style-loader')) {
+              const z = y.use.slice();
+              z.splice(1, 1);
               return Object.assign({}, y, {
-                use: y.use.slice(1),
+                use: z,
               });
             }
             return y;
@@ -80,7 +89,7 @@ module.exports = env => {
         name: 'server.js',
         nodeArgs: ['-r', 'source-map-support/register'],
       }),
-      // new webpack.WatchIgnorePlugin([paths.assetsManifest]),
+      new webpack.WatchIgnorePlugin([paths.assetsManifest]),
     ]);
   }
 
