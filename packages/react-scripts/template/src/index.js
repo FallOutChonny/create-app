@@ -13,7 +13,6 @@ server.listen(process.env.PORT || 3000, error => {
   if (error) {
     console.error(error);
   }
-  console.log('server running');
 });
 
 if (module.hot) {
