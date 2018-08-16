@@ -51,11 +51,18 @@ module.exports = env => {
       if (x.oneOf) {
         return Object.assign({}, x, {
           oneOf: x.oneOf.map(y => {
-            if (y.use && y.use[1] === require.resolve('style-loader')) {
-              const z = y.use.slice();
-              z.splice(1, 1);
+            if (y.use) {
               return Object.assign({}, y, {
-                use: z,
+                use: y.use
+                  .slice()
+                  .filter(
+                    z =>
+                      !(
+                        z === require.resolve('style-loader') ||
+                        z ===
+                          require.resolve('mini-css-extract-plugin/dist/loader')
+                      )
+                  ),
               });
             }
             return y;
@@ -67,9 +74,7 @@ module.exports = env => {
   });
 
   config.plugins = [
-    new webpack.optimize.LimitChunkCountPlugin({
-      maxChunks: 1,
-    }),
+    new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
     new webpack.DefinePlugin(
       Object.assign({}, envs.stringified, {
         __CLIENT__: false,
