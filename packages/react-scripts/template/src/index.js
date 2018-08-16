@@ -13,6 +13,10 @@ server.listen(process.env.PORT || 3000, error => {
   if (error) {
     console.error(error);
   }
+
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`server is running on ${process.env.PORT || 3000}`);
+  }
 });
 
 if (module.hot) {
