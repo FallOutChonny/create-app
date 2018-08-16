@@ -28,7 +28,7 @@ app.use('*', (req, res, next) => {
 		<body>
 			<div id="root">${ReactDOMServer.renderToString(<App />)}</div>
 			${__DLLS__ ? `<script src="/dll/vendors.js"></script>` : ''}
-			${assets.runtime.js ? `<script src="${assets.runtime.js}"></script>` : ''}
+			${assets.manifest.js ? `<script src="${assets.manifest.js}"></script>` : ''}
 			${assets.vendors.js ? `<script src="${assets.vendors.js}"></script>` : ''}
 			${assets.main.js ? `<script src="${assets.main.js}" /></script>` : ''}
 		</body>

@@ -142,7 +142,7 @@ module.exports = {
     // Keep the runtime chunk seperated to enable long term caching
     // https://twitter.com/wSokra/status/969679223278505985
     runtimeChunk: {
-      name: 'runtime',
+      name: 'manifest',
     },
   },
   resolve: {
