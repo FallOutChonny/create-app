@@ -1,0 +1,20 @@
+{
+  "name": "seer-dev-utils",
+  "version": "0.0.1",
+  "description": "Webpack utilities used by Seer",
+  "repository": "FalloutChonny/seer",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/FalloutChonny/seer/issues"
+  },
+  "engines": {
+    "node": ">=6"
+  },
+  "files": [
+    "webpackHelpers.js"
+  ],
+  "dependencies": {
+    "chalk": "2.4.1",
+    "react-dev-utils": "^6.0.4"
+  }
+}
